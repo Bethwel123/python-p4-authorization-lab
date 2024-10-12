@@ -16,7 +16,7 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-api = Api(app)
+api = Api(app) 
 
 class ClearSession(Resource):
 
@@ -83,15 +83,26 @@ class CheckSession(Resource):
             return user.to_dict(), 200
         
         return {}, 401
+    
+@app.before_request
+def check_login():
+    if not session.get('user_id') and request.endpoint in ['member_index', 'member_article']:
+        return {'error': 'Unauthorized'}, 401
 
 class MemberOnlyIndex(Resource):
     
     def get(self):
+        articles = [article.to_dict() for article in Article.query.filter(Article.is_member_only==True).all()]
+        response = make_response(articles, 200)
+        return response
         pass
 
 class MemberOnlyArticle(Resource):
     
     def get(self, id):
+        article = Article.query.filter_by(id=id).first()
+        response = make_response(article.to_dict(), 200)
+        return response 
         pass
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
